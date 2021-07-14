@@ -237,60 +237,6 @@ class DFs (DFs_procesar):
             self.fijar_indice(indicador, 'canton')
             self.columnas_a_datetime(indicador)
             self.remover_columnas(indicador, self.lista_dias, invertido=True)
-    
-    def str_a_datetime_inicial(self, fecha_inicial):
-        if fecha_inicial !='' and not fecha_inicial.isnumeric():
-            dia, mes, anio = fecha_inicial.split('/')
-            fecha_inicio = date(int(anio), int(mes), int(dia))
-            
-            if fecha_inicio < self.fecha_min:
-                fecha_inicio = self.fecha_min
-            return fecha_inicio
-
-        elif fecha_inicial =='':
-            return self.fecha_max
-        
-        elif fecha_inicial.isnumeric():
-            fecha_inicio = self.fin + timedelta(days=-int(fecha_inicial))
-            
-            if fecha_inicio < self.fecha_min:
-                fecha_inicio = self.fecha_min
-            return fecha_inicio
-
-    def str_a_datetime_final(self, fecha_final):
-        if fecha_final !='' and not fecha_final.isnumeric():
-            dia, mes, anio = fecha_final.split('/')
-            fecha_fin = date(int(anio), int(mes), int(dia))
-            
-            if fecha_fin > self.fecha_max:
-                fecha_fin = self.fecha_max
-            return fecha_fin
-
-        elif fecha_final =='':
-            return self.fecha_max
-        
-        elif fecha_final.isnumeric():
-            fecha_fin =  self.inicio + timedelta(days=int(fecha_final))
-
-            if fecha_fin > self.fecha_max:
-                fecha_fin = self.fecha_max
-            return fecha_fin
-
-    def datetime_max(self, fecha_max):
-        if fecha_max == '':
-            hoy = datetime.now()
-            hoy20horas = hoy.replace(hour=20, minute=0, second=0, microsecond=0)
-            
-            if hoy < hoy20horas:
-                return date.today() + timedelta(days=-1)
-            else:
-                return date.today()
-        else:
-            dia, mes, anio = fecha_max.split('/')
-            return date(int(anio), int(mes), int(dia))
-
-    def rango_dias(self, fecha_inicial, fecha_final):
-        return pd.date_range(start=fecha_inicial, end=fecha_final).to_list()
 
 Data = DFs('2', '')
 Data.main()
