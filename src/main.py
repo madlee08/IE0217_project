@@ -179,19 +179,14 @@ class formato_fechas:
 
 class DFs (DFs_procesar):
     def __init__(self, fecha_inicial='', fecha_final='', fecha_archivo='', indicadores=[]):
-        self.fecha_max = self.datetime_max(fecha_archivo)
-        self.fecha_min = date(2020, 4, 21)
-        self.indicadores = []
+        fecha = formato_fechas(fecha_inicial, fecha_final, fecha_archivo)
 
-        if fecha_inicial.isnumeric() and not fecha_final.isnumeric():
-            self.fin = self.str_a_datetime_final(fecha_final)
-            self.inicio = self.str_a_datetime_inicial(fecha_inicial)
-        
-        else:
-            self.inicio = self.str_a_datetime_inicial(fecha_inicial)
-            self.fin = self.str_a_datetime_final(fecha_final)
+        self.fecha_max = fecha.get_fecha_max()
+        self.fecha_inicial = fecha.get_fecha_inicial()
+        self.fecha_final = fecha.get_fecha_final()
+        self.lista_dias = fecha.get_lista_dias()
 
-        self.lista_dias = self.rango_dias(self.inicio, self.fin)
+        self.indicadores = indicadores
 
     def main(self):
         self.agregar_datos()
