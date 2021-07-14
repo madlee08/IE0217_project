@@ -48,6 +48,7 @@ class importar_a_pd:
 
 class DFs_base:
     lista_df = dict()
+    lista_df_limpio = dict()
 
 class DFs_procesar(DFs_base):
     importar = importar_a_pd()
@@ -64,14 +65,17 @@ class DFs_procesar(DFs_base):
     def remover_indices(self, df_nombre, lista_de_indices):
         self.lista_df[df_nombre].drop(lista_de_indices, inplace=True)
 
-    def remover_columnas(self, df_nombre, lista_de_columnas):
-        self.lista_df[df_nombre].drop(lista_de_columnas, inplace=True, axis=1)
-
+    def remover_columnas(self, df_nombre, lista_de_columnas, invertido=False):
+        if not invertido:
+            self.lista_df[df_nombre].drop(lista_de_columnas, inplace=True, axis=1)
+        else:
+            self.lista_df[df_nombre] = self.lista_df[df_nombre][self.lista_df[df_nombre].columns.intersection(lista_de_columnas)]
+    
     def renombrar_columnas(self, df_nombre, lista_de_columnas):
         self.lista_df[df_nombre].rename(columns=lista_de_columnas, inplace=True)
 
-    def fusionar_gdf_df(self, gdf_nombre_nuevo, gdf_nombre, df_nombre, pivote):
-        self.lista_df[gdf_nombre_nuevo] = self.lista_df[gdf_nombre].merge(self.lista_df[df_nombre], on=pivote)
+    def fusionar_dfs(self, df_nombre_nuevo, df_nombre1, df_nombre2, pivote):
+        self.lista_df_limpio[df_nombre_nuevo] = self.lista_df[gdf_nombre1].merge(self.lista_df[df_nombre2], on=pivote)
 
     def agregar_columna(self, df_nombre, nombre_columna_nuevo, valores):
         self.lista_df[df_nombre][nombre_columna_nuevo] = valores
@@ -79,26 +83,51 @@ class DFs_procesar(DFs_base):
     def fijar_indice(self, df_nombre, nombre_columna):
         self.lista_df[df_nombre].set_index(nombre_columna, inplace=True)
 
+    def columnas_a_datetime(self, df_nombre):
+        columnas = self.lista_df[df_nombre].columns
+        self.lista_df[df_nombre].columns = pd.to_datetime(columnas, infer_datetime_format=True)
+    
+    def devolver_columnas(self, df_nombre):
+        return self.lista_df[df_nombre_nuevo].columns.to_list()
+
+    def imprimir_crudo(self):
+        for df in self.lista_df.keys():
+            print(self.lista_df[df])
+
+import datetime
 
 class DFs (DFs_procesar):
+    def __init__(self, fecha_inicial='', fecha_final='', indicadores=[]):
+        self.inicio = fecha_inicial
+        self.final = fecha_final
+        self.indicadores = []
+
     def main(self):
         self.agregar_datos()
         self.limpiar_datos()
-        print(self.lista_df['cantones'])
-        print(self.lista_df['activos'])
+        self.imprimir_crudo()
 
     def agregar_datos(self):
         self.agregar_geodata('cantones', '../Datos/costa_rica_cantones.geojson')
-        self.agregar_csv('activos', '../Datos/06_30_21_CSV_ACTIVOS.csv')
+        self.agregar_csv('nombres', '../Datos/costa_rica_cantones_nombres.csv')
+
+        if not self.indicadores:
+            self.indicadores = ['positivos', 'activos', 'recup', 'fallecidos']
+        
+        for indicador in self.indicadores:
+            self.agregar_csv(indicador, '../Datos/07_13_21_CSV_{}.csv'.format(indicador.upper()))
 
     def limpiar_datos(self):
-        self.remover_columnas('cantones', ['osm_id', 'boundary', 'admin_level', 'parents', 'name', 'name_en'])
+        self.remover_columnas('cantones', ['local_name', 'geometry'], invertido=True)
         self.renombrar_columnas('cantones', {'local_name':'canton'})
         self.fijar_indice('cantones', 'canton')
         self.lista_df['cantones'].index = self.lista_df['cantones'].index.str.replace('Cantón ', '')
-
-        self.remover_columnas('activos', ['cod_provin', 'provincia', 'cod_canton'])
-        self.fijar_indice('activos', 'canton')
+        
+        for indicador in self.indicadores:
+            self.remover_columnas(indicador, ['cod_provin', 'provincia', 'cod_canton'])
+            self.lista_df[indicador].canton = self.lista_df['nombres']
+            self.fijar_indice(indicador, 'canton')
+            self.columnas_a_datetime(indicador)
 
 Data = DFs()
 Data.main()
