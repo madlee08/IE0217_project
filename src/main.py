@@ -90,22 +90,36 @@ class DFs_procesar(DFs_base):
     def devolver_columnas(self, df_nombre):
         return self.lista_df[df_nombre_nuevo].columns.to_list()
 
-    def imprimir_crudo(self):
+    def imprimir_df(self):
         for df in self.lista_df.keys():
             print(self.lista_df[df])
 
-import datetime
+from datetime import date, datetime, timedelta
 
 class DFs (DFs_procesar):
     def __init__(self, fecha_inicial='', fecha_final='', indicadores=[]):
-        self.inicio = fecha_inicial
-        self.final = fecha_final
+        self.fecha_max = self.datetime_max()
+        self.fecha_min = date(2020, 4, 21)
         self.indicadores = []
+
+        if fecha_inicial.isnumeric() and not fecha_final.isnumeric():
+            self.fin = self.str_a_datetime_final(fecha_final)
+            self.inicio = self.str_a_datetime_inicial(fecha_inicial)
+        
+        else:
+            self.inicio = self.str_a_datetime_inicial(fecha_inicial)
+            self.fin = self.str_a_datetime_final(fecha_final)
+
+        self.lista_dias = self.rango_dias(self.inicio, self.fin)
 
     def main(self):
         self.agregar_datos()
         self.limpiar_datos()
-        self.imprimir_crudo()
+        self.imprimir_df()
+        print(self.inicio)
+        print(self.fin)
+        print(self.fecha_max)
+        print(self.lista_dias)
 
     def agregar_datos(self):
         self.agregar_geodata('cantones', '../Datos/costa_rica_cantones.geojson')
@@ -128,6 +142,57 @@ class DFs (DFs_procesar):
             self.lista_df[indicador].canton = self.lista_df['nombres']
             self.fijar_indice(indicador, 'canton')
             self.columnas_a_datetime(indicador)
+            self.remover_columnas(indicador, self.lista_dias, invertido=True)
+    
+    def str_a_datetime_inicial(self, fecha_inicial):
+        if fecha_inicial !='' and not fecha_inicial.isnumeric():
+            dia, mes, anio = fecha_inicial.split('/')
+            fecha_inicio = date(int(anio), int(mes), int(dia))
+            
+            if fecha_inicio < self.fecha_min:
+                fecha_inicio = self.fecha_min
+            return fecha_inicio
 
-Data = DFs()
+        elif fecha_inicial =='':
+            return self.fecha_max
+        
+        elif fecha_inicial.isnumeric():
+            fecha_inicio = self.fin + timedelta(days=-int(fecha_inicial))
+            
+            if fecha_inicio < self.fecha_min:
+                fecha_inicio = self.fecha_min
+            return fecha_inicio
+
+    def str_a_datetime_final(self, fecha_final):
+        if fecha_final !='' and not fecha_final.isnumeric():
+            dia, mes, anio = fecha_final.split('/')
+            fecha_fin = date(int(anio), int(mes), int(dia))
+            
+            if fecha_fin > self.fecha_max:
+                fecha_fin = self.fecha_max
+            return fecha_fin
+
+        elif fecha_final =='':
+            return self.fecha_max
+        
+        elif fecha_final.isnumeric():
+            fecha_fin =  self.inicio + timedelta(days=int(fecha_final))
+
+            if fecha_fin > self.fecha_max:
+                fecha_fin = self.fecha_max
+            return fecha_fin
+
+    def datetime_max(self):
+        hoy = datetime.now()
+        hoy20horas = hoy.replace(hour=20, minute=0, second=0, microsecond=0)
+        
+        if hoy < hoy20horas:
+             return date.today() + timedelta(days=-1)
+        else:
+            return date.today()
+
+    def rango_dias(self, fecha_inicial, fecha_final):
+        return pd.date_range(start=fecha_inicial, end=fecha_final).to_list()
+
+Data = DFs('3', '')
 Data.main()
