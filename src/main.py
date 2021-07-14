@@ -96,9 +96,90 @@ class DFs_procesar(DFs_base):
 
 from datetime import date, datetime, timedelta
 
+class formato_fechas:
+    def __init__(self, fecha_inicial, fecha_final, fecha_archivo):
+        self.fecha_max = self.datetime_max(fecha_archivo)
+        self.fecha_min = date(2020, 4, 21)
+
+        if fecha_inicial.isnumeric() and not fecha_final.isnumeric():
+            self.fin = self.str_a_datetime_final(fecha_final)
+            self.inicio = self.str_a_datetime_inicial(fecha_inicial)
+
+        else:
+            self.inicio = self.str_a_datetime_inicial(fecha_inicial)
+            self.fin = self.str_a_datetime_final(fecha_final)
+        
+        self.lista_dias = self.rango_dias(self.inicio, self.fin)
+
+    def datetime_max(self, fecha_max):
+        if fecha_max == '':
+            hoy = datetime.now()
+            hoy20horas = hoy.replace(hour=20, minute=0, second=0, microsecond=0)
+            
+            if hoy < hoy20horas:
+                return date.today() + timedelta(days=-1)
+            else:
+                return date.today()
+        else:
+            dia, mes, anio = fecha_max.split('/')
+            return date(int(anio), int(mes), int(dia))
+
+    def str_a_datetime_inicial(self, fecha_inicial):
+        if fecha_inicial !='' and not fecha_inicial.isnumeric():
+            dia, mes, anio = fecha_inicial.split('/')
+            fecha_inicio = date(int(anio), int(mes), int(dia))
+            
+            if fecha_inicio < self.fecha_min:
+                fecha_inicio = self.fecha_min
+            return fecha_inicio
+
+        elif fecha_inicial =='':
+            return self.fecha_max
+        
+        elif fecha_inicial.isnumeric():
+            fecha_inicio = self.fin + timedelta(days=-int(fecha_inicial))
+            
+            if fecha_inicio < self.fecha_min:
+                fecha_inicio = self.fecha_min
+            return fecha_inicio
+
+    def str_a_datetime_final(self, fecha_final):
+        if fecha_final !='' and not fecha_final.isnumeric():
+            dia, mes, anio = fecha_final.split('/')
+            fecha_fin = date(int(anio), int(mes), int(dia))
+            
+            if fecha_fin > self.fecha_max:
+                fecha_fin = self.fecha_max
+            return fecha_fin
+
+        elif fecha_final =='':
+            return self.fecha_max
+        
+        elif fecha_final.isnumeric():
+            fecha_fin =  self.inicio + timedelta(days=int(fecha_final))
+
+            if fecha_fin > self.fecha_max:
+                fecha_fin = self.fecha_max
+            return fecha_fin
+
+    def rango_dias(self, fecha_inicial, fecha_final):
+        return pd.date_range(start=fecha_inicial, end=fecha_final).to_list()
+
+    def get_fecha_max(self):
+        return self.fecha_max
+    
+    def get_fecha_inicial(self):
+        return self.inicio
+    
+    def get_fecha_final(self):
+        return self.fin
+
+    def get_lista_dias(self):
+        return self.lista_dias
+
 class DFs (DFs_procesar):
-    def __init__(self, fecha_inicial='', fecha_final='', indicadores=[]):
-        self.fecha_max = self.datetime_max()
+    def __init__(self, fecha_inicial='', fecha_final='', fecha_archivo='', indicadores=[]):
+        self.fecha_max = self.datetime_max(fecha_archivo)
         self.fecha_min = date(2020, 4, 21)
         self.indicadores = []
 
@@ -127,9 +208,22 @@ class DFs (DFs_procesar):
 
         if not self.indicadores:
             self.indicadores = ['positivos', 'activos', 'recup', 'fallecidos']
+
+        anio = str(self.fecha_max.year)
+        anio_corto = str(self.fecha_max.year - 2000)
+
+        if self.fecha_max.month in range(1, 10):
+            mes = '0' + str(self.fecha_max.month)
+        else:
+            mes = str(self.fecha_max.month)
         
+        if self.fecha_max.day in range(1, 10):
+            dia = '0' + str(self.fecha_max.day)
+        else:
+            dia = str(self.fecha_max.day) 
+
         for indicador in self.indicadores:
-            self.agregar_csv(indicador, '../Datos/07_13_21_CSV_{}.csv'.format(indicador.upper()))
+            self.agregar_csv(indicador, '../Datos/{}_{}_{}_CSV_{}.csv'.format(mes, dia, anio_corto, indicador.upper()))
 
     def limpiar_datos(self):
         self.remover_columnas('cantones', ['local_name', 'geometry'], invertido=True)
@@ -182,17 +276,21 @@ class DFs (DFs_procesar):
                 fecha_fin = self.fecha_max
             return fecha_fin
 
-    def datetime_max(self):
-        hoy = datetime.now()
-        hoy20horas = hoy.replace(hour=20, minute=0, second=0, microsecond=0)
-        
-        if hoy < hoy20horas:
-             return date.today() + timedelta(days=-1)
+    def datetime_max(self, fecha_max):
+        if fecha_max == '':
+            hoy = datetime.now()
+            hoy20horas = hoy.replace(hour=20, minute=0, second=0, microsecond=0)
+            
+            if hoy < hoy20horas:
+                return date.today() + timedelta(days=-1)
+            else:
+                return date.today()
         else:
-            return date.today()
+            dia, mes, anio = fecha_max.split('/')
+            return date(int(anio), int(mes), int(dia))
 
     def rango_dias(self, fecha_inicial, fecha_final):
         return pd.date_range(start=fecha_inicial, end=fecha_final).to_list()
 
-Data = DFs('3', '')
+Data = DFs('2', '')
 Data.main()
